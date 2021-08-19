@@ -38,27 +38,43 @@ let apiSecret = "FqPk2lqCyRV0ms6qAiZfKFdCTQEVXqx4sEFmU5dnMBpMe47xBq"
 let accessToken = "1347672661200048133-6dNZxEeaRiptUkv4aGQ7XgOoNtyeDS"
 let accessSecret = "X3uMVLvX9MDA95NeWTraQ5vYLFFvL8jGWHGwvvLKAfs43"
 
-let tweetURL = URI(string: "https://api.twitter.com/1.1/statuses/update.json?status=hello")
-let testGet = URI(string: "https://api.twitter.com/1.1/favorites/list.json")
+let tweetURL = URI(string: "https://api.twitter.com/1.1/statuses/update.json")
+
+let statuses: [String] = [
+  "hello",
+  "This is a test tweet.",
+  "Just testing out a bot here.",
+  "Will delete this soon",
+  "Testing my quote bot"
+]
+
+enum TweetError: Error {
+  case noStatus
+}
 
 func routes(_ app: Application) throws {
   app.get { req -> EventLoopFuture<ClientResponse> in
     let nonce = UUID().uuidString
     let timestamp = Int64(Date().timeIntervalSince1970)
+    let httpMethod = "POST"
 
-    let httpMethod = "GET"
+    guard let status = statuses.randomElement() else {
+      throw TweetError.noStatus
+    }
+
     let authParameters: [String: String] = [
       "oauth_consumer_key": apiKey,
       "oauth_nonce": nonce,
       "oauth_signature_method": "HMAC-SHA1",
       "oauth_timestamp": "\(timestamp)",
       "oauth_token": accessToken,
-      "oauth_version": "1.0"
+      "oauth_version": "1.0",
+      "status": status
     ]
 
     let signature = authParameters.signature(
       httpMethod: httpMethod,
-      url: testGet.string,
+      url: tweetURL.string,
       apiKey: apiSecret,
       secret: accessSecret)
 
@@ -69,23 +85,11 @@ func routes(_ app: Application) throws {
       "oauth_token": accessToken,
       "oauth_version": "1.0",
       "oauth_nonce": nonce,
-      "oauth_signature": signature
+      "oauth_signature": signature,
     ]
 
+    let newUri = URI(string: tweetURL.string.appending("?status=\(status.urlEncodedString())"))
     let oAuthHeader = headerParameters.oauthHeader()
-
-    return req.client.get(testGet, headers: oAuthHeader)
-  }
-
-  app.get("hello") { req -> String in
-    return "Hello, world!"
+    return req.client.post(newUri, headers: oAuthHeader)
   }
 }
-
-let statuses = [
-  "hello",
-  "This is a test tweet.",
-  "Just testing out a bot here.",
-  "Will delete this soon",
-  "Testing my quote bot"
-]

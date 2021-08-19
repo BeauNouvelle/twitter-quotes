@@ -54,7 +54,6 @@ extension Dictionary where Key == String, Value == String {
     }
 
     let headers: HTTPHeaders = ["Authorization": "OAuth \(headerString)"]
-    print("headers", headerString)
     return headers
   }
 }
@@ -101,10 +100,6 @@ struct OAuth {
     let fullString = methodOutput + "&" + urlOutput + "&" + parameterOutput
     let signingKey = key.urlEncodedString() + "&" + secret.urlEncodedString()
     let signature = fullString.hmac(key: signingKey)
-
-    print("Parameters", fullString)
-    print("Signing Key", signingKey)
-    print("Signature", signature)
 
     return signature
   }
