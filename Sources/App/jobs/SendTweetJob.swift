@@ -30,19 +30,14 @@
 /// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 /// THE SOFTWARE.
 
+import Foundation
 import Vapor
-import QueuesRedisDriver
+import Queues
 
-// configures your application
-public func configure(_ app: Application) throws {
-  try app.queues.use(.redis(url: "redis://127.0.0.1:6379"))
-
-  app.queues.schedule(SendTweetJob())
-    .minutely()
-    .at(0)
-
-  try app.queues.startScheduledJobs()
-
-  // register routes
-  try routes(app)
+struct SendTweetJob: ScheduledJob {
+  func run(context: QueueContext) -> EventLoopFuture<Void> {
+    context.logger.info("Posting Scheduled Tweet")
+    QuoteManager.shared.tweetQuote(with: context.application.client)
+    return context.eventLoop.makeSucceededFuture(())
+  }
 }
